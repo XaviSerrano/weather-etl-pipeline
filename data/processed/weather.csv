@@ -1,0 +1,6 @@
+extracted_at,city,country,temperature_c,feels_like_c,humidity_pct,pressure_hpa,weather_description,wind_speed_m_s,cloudiness_pct,observed_at_utc
+2026-10-09T19:02:46,Barcelona,ES,19.96,19.26,48,1020,cielo claro,3.09,10,2026-10-09T16:53:40+00:00
+2026-10-09T19:04:14,Barcelona,ES,19.74,19.02,48,1020,cielo claro,3.09,10,2026-10-09T17:01:20+00:00
+2026-10-09T19:17:52,Barcelona,ES,19.65,18.95,49,1020,cielo claro,2.57,10,2026-10-09T17:13:56+00:00
+2026-10-09T19:18:19,Barcelona,ES,19.65,18.95,49,1020,cielo claro,2.57,10,2026-10-09T17:13:56+00:00
+2026-10-09T19:18:52,Barcelona,ES,19.65,18.95,49,1020,cielo claro,2.57,10,2026-10-09T17:13:56+00:00

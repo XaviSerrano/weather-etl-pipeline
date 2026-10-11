@@ -1,0 +1,25 @@
+
+# Credenciales y variables de entorno
+.env
+.env.*
+
+# Permitir plantillas de ejemplo sin secretos
+!.env.example
+
+# Entorno virtual de Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Datos generados durante la ejecución
+data/raw/*
+data/processed/*
+
+# Mantener las carpetas vacías en Git
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Archivos de editores
+.vscode/
+.idea/
