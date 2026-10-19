@@ -1,5 +1,7 @@
+
 import os
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -7,8 +9,11 @@ import requests
 from dotenv import load_dotenv
 
 
-# 1. CONFIGURACIÓN
-load_dotenv()
+# 1. CONFIGURACIÓN DE RUTAS Y VARIABLES DE ENTORNO
+
+project_dir = Path(__file__).resolve().parent.parent
+
+load_dotenv(project_dir / ".env")
 
 API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
@@ -22,35 +27,79 @@ params = {
 }
 
 
-# 2. EXTRACCIÓN
-response = requests.get(url, params=params, timeout=30)
+# 2. CONFIGURACIÓN DEL LOGGING
 
-print(f"Status code: {response.status_code}")
+logs_dir = project_dir / "logs"
+logs_dir.mkdir(parents=True, exist_ok=True)
 
-# Si la API devuelve un error, detenemos el programa
-response.raise_for_status()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(
+            logs_dir / "extract.log",
+            encoding="utf-8",
+        ),
+    ],
+)
 
-# Convertimos la respuesta JSON en un diccionario de Python
-data = response.json()
+
+# 3. EXTRACCIÓN DE DATOS
+
+logging.info("Iniciando extracción de datos meteorológicos")
+
+if not API_KEY: # Validación temprana: comprobar los requisitos antes de iniciar una operación costosa o dependiente de un servicio externo.
+    logging.error("No se ha encontrado OPENWEATHER_API_KEY en el archivo .env")
+    raise ValueError("Falta configurar OPENWEATHER_API_KEY")
+
+try:
+    response = requests.get(url, params=params, timeout=30)
+    response.raise_for_status()
+
+except requests.exceptions.HTTPError:
+    logging.exception(
+        "La API ha devuelto un error HTTP. Código: %s",
+        response.status_code,
+    )
+    raise
+
+except requests.exceptions.RequestException:
+    logging.exception("Error de conexión o de petición a OpenWeather")
+    raise
+
+try:
+    data = response.json()
+
+except requests.exceptions.JSONDecodeError:
+    logging.exception("La respuesta de OpenWeather no contiene JSON válido")
+    raise
+
+logging.info(
+    "Respuesta de OpenWeather recibida correctamente. Código HTTP: %s",
+    response.status_code,
+)
 
 
-# 3. PREPARAR EL ARCHIVO
+# 4. PREPARAR EL ARCHIVO
+
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 filename = f"weather_{timestamp}.json"
 
-# Localizamos la carpeta raíz del proyecto
-project_dir = Path(__file__).resolve().parent.parent
-
-# Construimos la ruta completa del archivo
 filepath = project_dir / "data" / "raw" / filename
 
-# Creamos data/raw si todavía no existe
 filepath.parent.mkdir(parents=True, exist_ok=True)
 
 
-# 4. GUARDAR LOS DATOS RAW
-with open(filepath, "w", encoding="utf-8") as file:
-    json.dump(data, file, ensure_ascii=False, indent=4)
+# 5. GUARDAR LOS DATOS RAW
 
-print(f"Datos guardados correctamente en: {filepath}")
+try:
+    with open(filepath, "w", encoding="utf-8") as file:
+        json.dump(data, file, ensure_ascii=False, indent=4)
 
+except OSError:
+    logging.exception("No se pudieron guardar los datos en: %s", filepath)
+    raise
+
+logging.info("Datos guardados correctamente en: %s", filepath)
+logging.info("Extracción finalizada correctamente")
