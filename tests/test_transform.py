@@ -70,3 +70,70 @@ def test_run_transform_creates_csv_with_valid_data(tmp_path, monkeypatch):
     assert rows[0]["observed_at_utc"] == expected_observed_at
 
     print(f"Carpeta temporal: {tmp_path}")
+
+
+
+def test_run_transform_skips_invalid_humidity(tmp_path, monkeypatch, caplog):
+    import logging
+
+    # 1. Creamos las carpetas temporales.
+    raw_dir = tmp_path / "raw"
+    processed_dir = tmp_path / "processed"
+    raw_dir.mkdir()
+
+    # 2. Preparamos un JSON válido.
+    valid_data = {
+        "name": "Barcelona",
+        "sys": {"country": "ES"},
+        "main": {
+            "temp": 20.5,
+            "feels_like": 19.8,
+            "humidity": 65,
+            "pressure": 1015,
+        },
+        "weather": [{"description": "cielo despejado"}],
+        "wind": {"speed": 3.2},
+        "clouds": {"all": 10},
+        "dt": 1792492200,
+    }
+
+    # 3. Creamos otro JSON con humedad inválida.
+    invalid_data = {
+        **valid_data,
+        "name": "Ciudad inválida",
+        "main": {
+            **valid_data["main"],
+            "humidity": 150,
+        },
+    }
+
+    # 4. Guardamos los dos JSON en la carpeta temporal.
+    (raw_dir / "weather_2026-10-20_10-30-00.json").write_text(
+        json.dumps(valid_data),
+        encoding="utf-8",
+    )
+
+    (raw_dir / "weather_2026-10-20_10-31-00.json").write_text(
+        json.dumps(invalid_data),
+        encoding="utf-8",
+    )
+
+    # 5. Hacemos que la transformación utilice las carpetas temporales.
+    monkeypatch.setattr(transform, "raw_dir", raw_dir)
+    monkeypatch.setattr(transform, "processed_dir", processed_dir)
+
+    # 6. Capturamos los logs y ejecutamos la transformación.
+    with caplog.at_level(logging.WARNING):
+        transform.run_transform()
+
+    # 7. Comprobamos que solo se ha guardado el registro válido.
+    output_file = processed_dir / "weather.csv"
+
+    with output_file.open("r", encoding="utf-8", newline="") as file:
+        rows = list(csv.DictReader(file))
+
+    assert len(rows) == 1
+    assert rows[0]["city"] == "Barcelona"
+
+    # 8. Comprobamos que el registro inválido se ha detectado.
+    assert "Humedad inválida: 150" in caplog.text
