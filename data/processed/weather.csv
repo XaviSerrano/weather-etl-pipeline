@@ -9,3 +9,4 @@ extracted_at,city,country,temperature_c,feels_like_c,humidity_pct,pressure_hpa,w
 2026-10-19T19:48:15,Barcelona,ES,17.71,17.68,82,1011,nubes,8.23,100,2026-10-19T17:47:13+00:00
 2026-10-19T19:58:37,Barcelona,ES,17.71,17.68,82,1011,nubes,8.23,100,2026-10-19T17:58:24+00:00
 2026-10-21T18:02:29,Barcelona,ES,21.38,20.8,47,1019,algo de nubes,2.24,20,2026-10-21T16:00:11+00:00
+2026-10-27T19:24:48,Barcelona,ES,20.55,20.64,76,1020,nubes dispersas,1.54,40,2026-10-27T18:20:06+00:00

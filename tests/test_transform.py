@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 
 import transform
 
+import pytest
+
 def test_run_transform_creates_csv_with_valid_data(tmp_path, monkeypatch):
 
     # tmp_path proporciona una carpeta para trabajar con archivos sin modificar datos reales
@@ -137,3 +139,18 @@ def test_run_transform_skips_invalid_humidity(tmp_path, monkeypatch, caplog):
 
     # 8. Comprobamos que el registro inválido se ha detectado.
     assert "Humedad inválida: 150" in caplog.text
+
+def test_run_transform_raises_error_when_no_json_files_exist(tmp_path, monkeypatch):
+    
+    # 1. Creamos una carpeta raw vacía
+    raw_dir = tmp_path / "raw"
+    processed_dir = tmp_path / "processed"
+    raw_dir.mkdir()
+
+    # 2. Indicamos a transform.py que utilice estas carpetas
+    monkeypatch.setattr(transform, "raw_dir", raw_dir)
+    monkeypatch.setattr(transform, "processed_dir", processed_dir)
+
+    # 3. Comprobamos que se produce el error esperado
+    with pytest.raises(FileNotFoundError):
+        transform.run_transform()
