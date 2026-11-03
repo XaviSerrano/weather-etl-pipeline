@@ -32,7 +32,7 @@ def configure_logging():
 
 def run_extract():
     """Obtiene los datos de OpenWeather y los guarda en JSON."""
-    load_dotenv(project_dir / ".env")
+    load_dotenv(project_dir / ".env", override=True)
     api_key = os.getenv("OPENWEATHER_API_KEY")
 
     if not api_key:
@@ -62,13 +62,15 @@ def run_extract():
         )
         raise
 
+    
+    except requests.exceptions.JSONDecodeError:
+        logging.exception("La respuesta de OpenWeather no contiene JSON válido")
+        raise
+
     except requests.exceptions.RequestException:
         logging.exception("Error de conexión o petición a OpenWeather")
         raise
 
-    except requests.exceptions.JSONDecodeError:
-        logging.exception("La respuesta de OpenWeather no contiene JSON válido")
-        raise
 
     logging.info(
         "Respuesta recibida correctamente. Código HTTP: %s",

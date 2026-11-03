@@ -32,7 +32,7 @@ def configure_logging():
 
 def run_load():
     """Carga el CSV en PostgreSQL evitando registros duplicados."""
-    load_dotenv(project_dir / ".env")
+    load_dotenv(project_dir / ".env", override=True)
 
     logging.info("Iniciando carga de datos en PostgreSQL")
 
@@ -59,6 +59,7 @@ def run_load():
             + ", ".join(missing_vars)
         )
 
+    # SQL para insertar los datos en la tabla weather_observations evitando duplicados.
     insert_sql = """
         INSERT INTO weather_observations (
             extracted_at,
@@ -92,6 +93,7 @@ def run_load():
 
     conn = None
 
+    # Intentamos establecer la conexión con PostgreSQL y cargar los datos del CSV.
     try:
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST"),

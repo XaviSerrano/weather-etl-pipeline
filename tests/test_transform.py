@@ -8,6 +8,7 @@ import pytest
 
 import logging
 
+# 1. Test para comprobar que se crea un CSV con datos válidos.
 def test_run_transform_creates_csv_with_valid_data(tmp_path, monkeypatch):
 
     # tmp_path proporciona una carpeta para trabajar con archivos sin modificar datos reales
@@ -75,6 +76,7 @@ def test_run_transform_creates_csv_with_valid_data(tmp_path, monkeypatch):
 
     print(f"Carpeta temporal: {tmp_path}")
 
+# 2. Test para comprobar que se omite un registro con humedad inválida.
 def test_run_transform_skips_invalid_humidity(tmp_path, monkeypatch, caplog):
     import logging
 
@@ -140,6 +142,7 @@ def test_run_transform_skips_invalid_humidity(tmp_path, monkeypatch, caplog):
     # 8. Comprobamos que el registro inválido se ha detectado.
     assert "Humedad inválida: 150" in caplog.text
 
+# 3. Test para comprobar que se lanza un error cuando no existen archivos JSON.
 def test_run_transform_raises_error_when_no_json_files_exist(tmp_path, monkeypatch):
     
     # 1. Creamos una carpeta raw vacía
@@ -155,6 +158,7 @@ def test_run_transform_raises_error_when_no_json_files_exist(tmp_path, monkeypat
     with pytest.raises(FileNotFoundError):
         transform.run_transform()
     
+# 4. Test para comprobar que se lanza un error cuando todos los JSON son inválidos.
 def test_run_transform_raise_error_when_all_json_files_are_invalid(tmp_path, monkeypatch):
     
     # 1. Creamos carpetas temporales
@@ -187,6 +191,7 @@ def test_run_transform_raise_error_when_all_json_files_are_invalid(tmp_path, mon
     # 5. Comprobamos que no se ha generado un CSV.
     assert not (processed_dir / "weather.csv").exists()
 
+# 5. Test para comprobar que se omite un JSON malformado.
 def test_run_transform_skips_malformed_json(tmp_path, monkeypatch, caplog):
     # 1. Creamos las carpetas temporales
     raw_dir = tmp_path / "raw"
