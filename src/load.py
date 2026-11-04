@@ -7,7 +7,6 @@ from pathlib import Path
 import psycopg2
 from dotenv import load_dotenv
 
-
 project_dir = Path(__file__).resolve().parent.parent
 csv_file = project_dir / "data" / "processed" / "weather.csv"
 logs_dir = project_dir / "logs"
@@ -32,7 +31,7 @@ def configure_logging():
 
 def run_load():
     """Carga el CSV en PostgreSQL evitando registros duplicados."""
-    load_dotenv(project_dir / ".env", override=True)
+    load_dotenv(project_dir / ".env")
 
     logging.info("Iniciando carga de datos en PostgreSQL")
 
@@ -41,6 +40,8 @@ def run_load():
             f"No se encuentra el archivo CSV: {csv_file}"
         )
 
+    # Verificamos que las variables de entorno necesarias estén presentes.
+
     required_vars = [
         "DB_HOST",
         "DB_PORT",
@@ -48,6 +49,8 @@ def run_load():
         "DB_USER",
         "DB_PASSWORD",
     ]
+
+    # Comprobamos si falta alguna variable de entorno requerida.
 
     missing_vars = [
         name for name in required_vars if not os.getenv(name)
@@ -58,6 +61,7 @@ def run_load():
             "Faltan variables de PostgreSQL en .env: "
             + ", ".join(missing_vars)
         )
+
 
     # SQL para insertar los datos en la tabla weather_observations evitando duplicados.
     insert_sql = """
@@ -116,6 +120,7 @@ def run_load():
                     encoding="utf-8",
                     newline="",
                 ) as file:
+            
                     reader = csv.DictReader(file)
 
                     if not reader.fieldnames:
@@ -145,7 +150,22 @@ def run_load():
                             + ", ".join(sorted(missing_columns))
                         )
 
+
+                    # Verificamos que las columnas obligatorias no estén vacías en cada fila del CSV.
+                    required_values = {
+                        "extracted_at",
+                        "city",
+                        "country"
+                    }
+
                     for row in reader:
+
+                        for column in required_values:
+                            if not row[column] or not row[column].strip():
+                                raise ValueError(
+                                    f"El campo obligatorio '{column}' está vacío"
+                                )
+                    
                         cursor.execute(insert_sql, row)
 
                         if cursor.rowcount == 1:

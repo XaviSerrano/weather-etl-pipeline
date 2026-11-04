@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, Mock
 
 # 1. Probamos la función run_load para insertar datos meteorológicos en PostgreSQL.
 def test_run_load_inserts_weather_data(tmp_path, monkeypatch):
+    
     # 1. Configuramos variables de conexión ficticias.
     monkeypatch.setenv("DB_HOST", "localhost")
     monkeypatch.setenv("DB_PORT", "5432")
@@ -58,3 +59,107 @@ def test_run_load_inserts_weather_data(tmp_path, monkeypatch):
 
     # 9. Comprobamos que la conexión se ha cerrado.
     mock_connection.close.assert_called_once()
+
+# 2. Probamos que se lanza un error cuando la conexión a la base de datos falla.
+def test_run_load_raises_error_when_database_connection_fails(
+    tmp_path, monkeypatch
+):
+
+    # 1. Configuramos variables de entorno ficticias
+    monkeypatch.setenv("DB_HOST", "localhost")
+    monkeypatch.setenv("DB_PORT", "5432")
+    monkeypatch.setenv("DB_NAME", "test_db")
+    monkeypatch.setenv("DB_USER", "test_user")
+    monkeypatch.setenv("DB_PASSWORD", "test_password")
+
+    # 2. Creamos un CSV temporal
+    csv_file = tmp_path / "weather.csv"
+    csv_file.write_text(
+        "extracted_at,city,country\n"
+        "2026-11-04 10:00:00,Barcelona,ES\n",
+        encoding="utf-8"
+    )
+
+    monkeypatch.setattr(load, "csv_file", csv_file)
+
+    # 3. Simulamos un error al conectar con PostgreSQL
+    monkeypatch.setattr(
+        load.psycopg2, # librería psycopg2 dentro de nuestro load.py que vamos a modificar
+        "connect", # nombre del atributo que vamos a modificar
+        Mock(side_effect=load.psycopg2.OperationalError)
+    )
+
+    # 4. Comprobamos que el error se lanza correctamente
+    with pytest.raises(load.psycopg2.OperationalError):
+        load.run_load()
+
+# 3. Probamos que se lanza un error cuando el CSV no existe.
+def test_run_load_raises_error_when_csv_does_not_exist(
+    tmp_path, monkeypatch
+):
+    # 1. Creamos una ruta a un CSV que no existe
+    csv_file = tmp_path / "weather.csv"
+
+    # 2. Sustituimos la ruta original por nuestra ruta temporal
+    monkeypatch.setattr(load, "csv_file", csv_file)
+
+    # 3. Comprobamos que se lanza FileNotFoundError
+    with pytest.raises(FileNotFoundError):
+        load.run_load()
+
+# 4. Probamos que se lanza un error cuando las cabeceras del CSV son inválidas.
+def test_run_load_raises_error_when_csv_headers_are_invalid(
+    tmp_path, monkeypatch
+):
+
+    # 1. Creamos un CSV con cabeceras incorrectas
+    csv_file = tmp_path / "weather.csv"
+
+    csv_file.write_text(
+        "date,location,temperature\n"
+        "2026-11-04,Barcelona,18.5\n",
+        encoding="utf-8"
+    )
+
+    # 2. Sustituimos la ruta original del CSV
+    monkeypatch.setattr(load, "csv_file", csv_file)
+
+    # 3. Configuramos variables de entorno ficticias
+    monkeypatch.setenv("DB_HOST", "localhost")
+    monkeypatch.setenv("DB_PORT", "5432")
+    monkeypatch.setenv("DB_NAME", "test_db")
+    monkeypatch.setenv("DB_USER", "test_user")
+    monkeypatch.setenv("DB_PASSWORD", "test_password")
+
+    # 5. Comprobamos que se lanza ValueError
+    with pytest.raises(ValueError):
+        load.run_load()
+
+
+# 5. Probamos que se lanza un error cuando los valores obligatorios están vacíos en el CSV.
+def test_run_load_raises_error_when_required_values_are_empty(
+    tmp_path, monkeypatch
+):
+
+    # 1. Creamos un CSV con valores obligatorios vacíos
+    csv_file = tmp_path / "weather.csv"
+
+    csv_file.write_text(
+        "extracted_at,city,country\n"
+        ",Barcelona,ES\n",
+        encoding="utf-8"
+    )
+
+    # 2. Sustituimos la ruta original del CSV
+    monkeypatch.setattr(load, "csv_file", csv_file)
+
+    # 3. Configuramos variables de entorno ficticias
+    monkeypatch.setenv("DB_HOST", "localhost")
+    monkeypatch.setenv("DB_PORT", "5432")
+    monkeypatch.setenv("DB_NAME", "test_db")
+    monkeypatch.setenv("DB_USER", "test_user")
+    monkeypatch.setenv("DB_PASSWORD", "test_password")
+
+    # 4. Comprobamos que se lanza ValueError
+    with pytest.raises(ValueError):
+        load.run_load()
